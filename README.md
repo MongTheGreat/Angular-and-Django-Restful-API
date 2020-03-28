@@ -43,4 +43,4 @@ For Django
 python manage.py runserver
 Notes:
 
-npm install angular-cookie --save
+npm install ngx-cookie-service
