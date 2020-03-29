@@ -1,4 +1,9 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { first } from 'rxjs/operators';
+
+import { MessageService, UserService, AuthService } from '../../services/';
 import { User } from '../../models/user';
 
 
@@ -9,12 +14,65 @@ import { User } from '../../models/user';
 })
 export class RegisterComponent implements OnInit {
 
-  constructor() { }
-  public user = new User(null, null, null);
+  registerForm: FormGroup;
+    loading = false;
+    submitted = false;
 
-  ngOnInit() {
+    constructor(
+        private formBuilder: FormBuilder,
+        private router: Router,
+        private authenticationService: AuthService,
+        private userService: UserService,
+        private messageService: MessageService
+    ) {
+        // redirect to home if already logged in
+        /**
+         *
+         if (this.authenticationService.currentUserValue) {
+            this.router.navigate(['/']);
+        }
+         */
 
-  }
-    get diagnostic() { return JSON.stringify(this.user); }
+    }
+
+
+
+    ngOnInit() {
+        this.registerForm = this.formBuilder.group({
+            first_name: ['', Validators.required],
+            last_name: ['', Validators.required],
+            username: ['', Validators.required],
+            email: ['', Validators.required],
+            password: ['', [Validators.required, Validators.minLength(6)]],
+            re_password: ['', [Validators.required, Validators.minLength(6)]]
+        });
+    }
+
+
+
+    // convenience getter for easy access to form fields
+    get f() { return this.registerForm.controls; }
+
+    onSubmit() {
+        this.submitted = true;
+
+        // stop here if form is invalid
+        if (this.registerForm.invalid) {
+            return;
+        }
+
+        this.loading = true;
+        this.userService.register(this.registerForm.value)
+            .pipe(first())
+            .subscribe(
+                data => {
+                    this.messageService.add('Registration successful');
+                    this.router.navigate(['/login']);
+                },
+                error => {
+                    this.messageService.error(error);
+                    this.loading = false;
+                });
+    }
 
 }

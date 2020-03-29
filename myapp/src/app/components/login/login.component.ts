@@ -1,7 +1,14 @@
 import { Component, OnInit } from '@angular/core';
-import { AuthService } from '../../services/auth.service';
+
+import { Router, ActivatedRoute } from '@angular/router';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { first } from 'rxjs/operators';
+
 import { User } from '../../models/user';
-import { CookieService } from 'angular2-cookie/core';
+import { MessageService, UserService, AuthService } from '../../services/';
+
+
+
 
 @Component({
   selector: 'login',
@@ -10,30 +17,58 @@ import { CookieService } from 'angular2-cookie/core';
 })
 
 export class LoginComponent implements OnInit {
-  constructor(public auth: AuthService, public cookieservice: CookieService){}
-  public user: any = new User(null, null, null);
+  loginForm: FormGroup;
+  loading = false;
+  submitted = false;
+  returnUrl: string;
 
-  ngOnInit(): void{
+  constructor(
+      private formBuilder: FormBuilder,
+      private route: ActivatedRoute,
+      private router: Router,
+      private authenticationService: AuthService,
+      private alertService: MessageService
+  ) {
+      // redirect to home if already logged in
+      //if (this.authenticationService.currentUserValue) {
+         // this.router.navigate(['/']);
+      //}
   }
 
-  LoginUser(){
-  	console.log("login user");
-    this.auth.login(this.user)
-    .then((data)=>{
-      console.log(data);
-      if(data.status==200){
-        if(data.json()['status']=='success'){
-          this.cookieservice.put('token', data.json()['token']);
-        }else{
-          console.log('Invalid Credentials');
-        }
-      }
-      else{
-        console.log("Some error occured")
-      }
-    })
+  ngOnInit() {
+      this.loginForm = this.formBuilder.group({
+          email: ['', Validators.required],
+          password: ['', Validators.required]
+      });
 
+      // get return url from route parameters or default to '/'
+      this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
   }
-    get diagnostic() { return JSON.stringify(this.user); }
+
+  // convenience getter for easy access to form fields
+  get f() { return this.loginForm.controls; }
+
+  onSubmit() {
+      this.submitted = true;
+
+      // stop here if form is invalid
+      if (this.loginForm.invalid) {
+          return;
+      }
+
+      this.loading = true;
+      this.authenticationService.login(this.f.email.value, this.f.password.value)
+          .pipe(first())
+          .subscribe(
+              data => {
+                  this.router.navigate([this.returnUrl]);
+              },
+              error => {
+                  this.alertService.error(error);
+                  this.loading = false;
+              });
+  }
+
+
 
 }

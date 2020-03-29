@@ -43,4 +43,6 @@ For Django
 python manage.py runserver
 Notes:
 
-npm install ngx-cookie-service
+ng add @angular/material
+
+
